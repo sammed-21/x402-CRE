@@ -1,31 +1,5 @@
 # x402-cre: Crypto Price Alert System
 
-## LinkLab Masterclass Book
-
-The book for this repository is available at the following url:
-
-```
-https://smartcontractkit.github.io/x402-cre-price-alerts/
-```
-
-## Repository Overview
-
-**x402-cre** is a demonstration project that showcases a complete crypto price alert system integrating three cutting-edge technologies:
-
-1. **x402 Payment Protocol** - Micropayment system for API access
-2. **Chainlink [CRE](https://docs.chain.link/cre) (Chainlink Runtime Environment)** - Decentralized workflow execution for on-chain operations
-3. **Gemini AI** - Natural language processing for user interaction. While we used Gemini here you can use any LLM that has an OpenAI-API compatible endpoint.
-
-This repository serves as a public demo to help developers understand how to build applications that combine AI-powered interfaces, payment-protected APIs, and blockchain-based automation.
-
-## LiveStreamed LinkLab Walkthrough
-This demo was done live on a Chainlink Linklab Session that was livestreamed.  You can <b>[watch the video and follow along here](https://www.youtube.com/live/r7VKS5L47f0).</b>
-
-
-
-
-
-
 ## What It Accomplishes
 
 The system allows users to create cryptocurrency price alerts through natural language conversation. Here's what happens:
@@ -235,6 +209,7 @@ Send a message to create your alert:
 ```
 > Create an alert when BTC is greater than 60000
 ```
+
 > [!NOTE]: this is deliberately set to below current market price so that the trigger fires.
 
 Type `exit` or `quit` to disable chat (server continues running).
