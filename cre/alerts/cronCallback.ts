@@ -1,10 +1,10 @@
 /**
  * Alert Cron Trigger Handler
- * 
+ *
  * This module handles the cron trigger for checking price conditions and sending notifications.
  * It periodically fetches price data from Chainlink feeds, checks rules against current prices,
  * and sends Pushover notifications when conditions are met.
- * 
+ *
  * Flow:
  * 1. Fetch current prices for BTC, ETH, LINK
  * 2. Fetch all rules from RuleRegistry contract
@@ -12,21 +12,8 @@
  * 4. If condition is met, send Pushover notification
  */
 
-import {
-  type Runtime,
-  getNetwork,
-  encodeCallMsg,
-  bytesToHex,
-  type HTTPSendRequester,
-  ok,
-  consensusIdenticalAggregation,
-} from "@chainlink/cre-sdk";
-import {
-  type Address,
-  encodeFunctionData,
-  decodeFunctionResult,
-  zeroAddress,
-} from "viem";
+import { type Runtime, getNetwork, encodeCallMsg, bytesToHex, type HTTPSendRequester, ok, consensusIdenticalAggregation } from "@chainlink/cre-sdk";
+import { type Address, encodeFunctionData, decodeFunctionResult, zeroAddress } from "viem";
 import { cre } from "@chainlink/cre-sdk";
 import type { Config, Rule, PriceData, PostResponse } from "./types";
 
@@ -110,17 +97,13 @@ const registryAbi = [
 
 /**
  * Fetches latest price data from a Chainlink price feed
- * 
+ *
  * @param runtime - CRE runtime context
  * @param evmClient - EVM client for contract calls
  * @param contractAddress - Price feed contract address
  * @returns PriceData structure with latest round data
  */
-function getPriceData(
-  runtime: Runtime<Config>,
-  evmClient: InstanceType<typeof cre.capabilities.EVMClient>,
-  contractAddress: Address
-): PriceData {
+function getPriceData(runtime: Runtime<Config>, evmClient: InstanceType<typeof cre.capabilities.EVMClient>, contractAddress: Address): PriceData {
   const callDataFeed = encodeFunctionData({
     abi: priceFeedAbi,
     functionName: "latestRoundData",
@@ -154,7 +137,7 @@ function getPriceData(
 
 /**
  * Converts condition string to mathematical symbol
- * 
+ *
  * @param condition - Condition string (gt, lt, gte, lte)
  * @returns Mathematical symbol (>, <, >=, <=)
  */
@@ -170,17 +153,13 @@ function getConditionSymbol(condition: string): string {
 
 /**
  * Checks if a price condition is met
- * 
+ *
  * @param currentPrice - Current price in USD
  * @param targetPrice - Target price in USD
  * @param condition - Condition string (gt, lt, gte, lte)
  * @returns true if condition is met, false otherwise
  */
-function checkCondition(
-  currentPrice: bigint,
-  targetPrice: bigint,
-  condition: string
-): boolean {
+function checkCondition(currentPrice: bigint, targetPrice: bigint, condition: string): boolean {
   switch (condition) {
     case "gt":
       return currentPrice > targetPrice;
@@ -197,20 +176,16 @@ function checkCondition(
 
 /**
  * Fetches all rules from the RuleRegistry contract
- * 
+ *
  * Attempts to fetch all rules at once via getAllRules(). If that fails,
  * falls back to fetching rules individually via getRule(i).
- * 
+ *
  * @param runtime - CRE runtime context
  * @param evmClient - EVM client for contract calls
  * @param registryAddress - RuleRegistry contract address
  * @returns Array of Rule structs
  */
-function getAllRules(
-  runtime: Runtime<Config>,
-  evmClient: InstanceType<typeof cre.capabilities.EVMClient>,
-  registryAddress: Address
-): Rule[] {
+function getAllRules(runtime: Runtime<Config>, evmClient: InstanceType<typeof cre.capabilities.EVMClient>, registryAddress: Address): Rule[] {
   // Get rule count
   const callDataCount = encodeFunctionData({
     abi: registryAbi,
@@ -260,10 +235,7 @@ function getAllRules(
   });
 
   // If getAllRules worked, use it
-  if (
-    Array.isArray(decodedResult) &&
-    decodedResult.length === Number(ruleCount)
-  ) {
+  if (Array.isArray(decodedResult) && decodedResult.length === Number(ruleCount)) {
     return decodedResult as Rule[];
   }
 
@@ -276,7 +248,6 @@ function getAllRules(
       functionName: "getRule",
       args: [BigInt(i)],
     });
-
     const contractCallRule = evmClient
       .callContract(runtime, {
         call: encodeCallMsg({
@@ -305,7 +276,7 @@ function getAllRules(
 
 /**
  * Sends a Pushover notification when a price alert condition is met
- * 
+ *
  * @param rule - The rule that triggered the alert
  * @param priceData - Current price data for all assets
  * @param secrets - Pushover API credentials
@@ -322,10 +293,7 @@ const postPushoverData =
     }
 
     // Chainlink price feeds return price with 8 decimals
-    const answerValue =
-      typeof assetPriceData.answer === "bigint"
-        ? assetPriceData.answer
-        : BigInt(assetPriceData.answer.toString());
+    const answerValue = typeof assetPriceData.answer === "bigint" ? assetPriceData.answer : BigInt(assetPriceData.answer.toString());
     const currentPriceUsd = Number(answerValue) / 10 ** 8;
     const targetPriceUsd = Number(rule.targetPriceUsd);
 
@@ -368,17 +336,13 @@ const postPushoverData =
     const resp = sendRequester.sendRequest(req).result();
 
     if (!ok(resp)) {
-      throw new Error(
-        `Pushover API request failed with status: ${resp.statusCode}`
-      );
+      throw new Error(`Pushover API request failed with status: ${resp.statusCode}`);
     }
 
     const responseText = new TextDecoder().decode(resp.body);
     const responseBody = JSON.parse(responseText);
     if (responseBody.status !== 1) {
-      throw new Error(
-        `Pushover API returned error: ${JSON.stringify(responseBody)}`
-      );
+      throw new Error(`Pushover API returned error: ${JSON.stringify(responseBody)}`);
     }
 
     return { statusCode: resp.statusCode };
@@ -390,13 +354,13 @@ const postPushoverData =
 
 /**
  * Cron trigger handler - runs periodically to check price conditions
- * 
+ *
  * Flow:
  * 1. Fetch current prices for BTC, ETH, LINK
  * 2. Fetch all rules from RuleRegistry contract
  * 3. For each rule, check if condition is met
  * 4. If condition is met, send Pushover notification
- * 
+ *
  * @param runtime - CRE runtime context
  * @returns Status message
  */
@@ -420,27 +384,13 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
     throw new Error(`Network not found`);
   }
 
-  const evmClient = new cre.capabilities.EVMClient(
-    network.chainSelector.selector
-  );
+  const evmClient = new cre.capabilities.EVMClient(network.chainSelector.selector);
 
   // Step 1: Fetch price data
   runtime.log("\n[Step 1] Fetching price data from Chainlink feeds...");
-  const btcPriceData = getPriceData(
-    runtime,
-    evmClient,
-    runtime.config.evms[0].dataFeeds?.BTC as Address
-  );
-  const ethPriceData = getPriceData(
-    runtime,
-    evmClient,
-    runtime.config.evms[0].dataFeeds?.ETH as Address
-  );
-  const linkPriceData = getPriceData(
-    runtime,
-    evmClient,
-    runtime.config.evms[0].dataFeeds?.LINK as Address
-  );
+  const btcPriceData = getPriceData(runtime, evmClient, runtime.config.evms[0].dataFeeds?.BTC as Address);
+  const ethPriceData = getPriceData(runtime, evmClient, runtime.config.evms[0].dataFeeds?.ETH as Address);
+  const linkPriceData = getPriceData(runtime, evmClient, runtime.config.evms[0].dataFeeds?.LINK as Address);
 
   const btcPriceUsd = Number(btcPriceData.answer) / 10 ** 8;
   const ethPriceUsd = Number(ethPriceData.answer) / 10 ** 8;
@@ -450,11 +400,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
   runtime.log(`  • LINK: $${linkPriceUsd.toFixed(2)}`);
 
   // Step 2: Fetch all rules
-  const rules = getAllRules(
-    runtime,
-    evmClient,
-    runtime.config.evms[0].ruleRegistryAddress as Address
-  );
+  const rules = getAllRules(runtime, evmClient, runtime.config.evms[0].ruleRegistryAddress as Address);
 
   if (rules.length === 0) {
     runtime.log("\n[Step 3] No rules to process");
@@ -480,9 +426,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
     const ruleAge = currentTimestamp - rule.createdAt;
     if (ruleAge > ruleTTL) {
       const ttlMinutes = Number(ruleTTL) / 60;
-      runtime.log(
-        `  [Rule ${index + 1}] Skipped (older than ${ttlMinutes} minutes)`
-      );
+      runtime.log(`  [Rule ${index + 1}] Skipped (older than ${ttlMinutes} minutes)`);
       return;
     }
 
@@ -503,16 +447,10 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
     // Check condition (Chainlink feeds have 8 decimals)
     const priceInUsd = currentPrice / BigInt(10 ** 8);
-    const conditionMet = checkCondition(
-      priceInUsd,
-      rule.targetPriceUsd,
-      rule.condition
-    );
+    const conditionMet = checkCondition(priceInUsd, rule.targetPriceUsd, rule.condition);
 
     if (conditionMet) {
-      runtime.log(
-        `  [Rule ${index + 1}] [SUCCESS] Condition met: ${rule.asset} $${priceInUsd.toString()} ${rule.condition} $${rule.targetPriceUsd.toString()}`
-      );
+      runtime.log(`  [Rule ${index + 1}] [SUCCESS] Condition met: ${rule.asset} $${priceInUsd.toString()} ${rule.condition} $${rule.targetPriceUsd.toString()}`);
 
       try {
         const result = httpClient
@@ -532,9 +470,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
         runtime.log(`    -> [ERROR] Failed to send notification: ${error.message}`);
       }
     } else {
-      runtime.log(
-        `  [Rule ${index + 1}] Condition not met: ${rule.asset} $${priceInUsd.toString()} ${rule.condition} $${rule.targetPriceUsd.toString()}`
-      );
+      runtime.log(`  [Rule ${index + 1}] Condition not met: ${rule.asset} $${priceInUsd.toString()} ${rule.condition} $${rule.targetPriceUsd.toString()}`);
     }
   });
 
@@ -543,4 +479,3 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
   return `Processed ${rules.length} rules, sent ${notificationsSent} notifications`;
 };
-

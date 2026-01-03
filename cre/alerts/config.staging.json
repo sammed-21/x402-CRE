@@ -4,7 +4,7 @@
   "publicKey": "",
   "evms": [
     {
-      "ruleRegistryAddress": "0x9B9fC1EeF6BFC76CD07501Ae81b66f24fAB322B1",
+      "ruleRegistryAddress": "0x8C39561EDb3f686b34fb063383B026b7640EE092",
       "chainSelectorName": "ethereum-testnet-sepolia-base-1",
       "gasLimit": "1000000",
       "dataFeeds": {
